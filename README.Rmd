@@ -1,0 +1,185 @@
+---
+output: github_document
+always_allow_html: true
+---
+
+```{r}
+library("dplyr")   
+library("ggplot2")
+library("readr")  
+library("here")    
+library("tidyr") 
+library("stringr")
+library("kableExtra")
+```
+
+
+### load data.csv
+```{r, load-data}
+my_data <- read.csv(file = "/Users/princesa/Desktop/pa_3/data/vowel_data.csv")
+```
+
+
+
+### Calculate means and standard deviations of your English/Spanish vowels 
+
+# Average and Standard Deviations for columns f1, f2, tl
+```{r}
+my_data %>%
+    summarize(f1_cent_avg = mean(f1_cent))
+sd(my_data$f1_cent)
+```
+
+```{r}
+my_data %>%
+    summarize(f2_cent_avg = mean(f2_cent))
+sd(my_data$f2_cent)
+```
+
+```{r}
+my_data %>%
+    summarize(tl_avg = mean(tl))
+sd(my_data$tl)
+```
+
+
+
+# Table analysis to view averages
+```{r}
+summary(my_data) %>%
+  kbl(caption = "Data Summary") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+table(my_data$vowel)
+table(my_data$language)
+```
+
+
+
+
+### Plots
+
+# 1. Plot trajectory length as a function of vowel and language 
+  Using paste() to join two variables as one string variable.
+
+```{r, plot1}
+ggplot(my_data,aes(y=tl,x=paste(language,vowel)))+
+  geom_point() +
+  labs(x = "English and Spanish Vowels", y = "Trajectory Length",
+  title = "Analysis of English and Spanish Vowels") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+# 2. Plot F1 as a function of vowel and language 
+```{r, plot2}
+ggplot(my_data,aes(y=f1_cent, x=paste(language,vowel)))+
+  geom_point() +
+  labs(x = "English and Spanish Vowels", y = "f1 Centroids",
+  title = "Analysis of English and Spanish Vowels") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+# 3. Plot F2 as a function of vowel and language 
+```{r, plot3}
+ggplot(my_data,aes(y=f2_cent, x=paste(language,vowel)))+
+  geom_point() +
+  labs(x = "English and Spanish Vowels", y = "f2 Centroids",
+  title = "Analysis of English and Spanish Vowels") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r, descriptives}
+vowel_means <- my_data %>% 
+  group_by(vowel, language) %>% 
+  summarize(f1_cent = mean(f1_cent), f2_cent = mean(f2_cent)) %>% 
+  ungroup() %>% 
+  mutate(order = case_when(vowel == "i" ~ 1, vowel == "a" ~ 2, TRUE ~ 3), 
+         vowel = forcats::fct_reorder2(vowel, vowel, order)) %>% 
+  arrange(order)
+
+my_data %>% 
+  mutate(vowel = forcats::fct_relevel(vowel, "u", "a", "i")) %>% 
+  ggplot(., aes(x = f2_cent, y = f1_cent, color = language, label = vowel)) + 
+    geom_text(size = 3.5, alpha = 0.6, show.legend = F) + 
+    geom_path(data = vowel_means, aes(group = language, lty = language), 
+              color = "grey") + 
+    geom_text(data = vowel_means, show.legend = F, size = 7) + 
+    scale_y_reverse() + 
+    scale_x_reverse() + 
+    scale_color_brewer(palette = "Set1") + 
+    labs(title = "Vowel space comparison", 
+         subtitle = "Spectral centroids of English/Spanish cardinal vowels", 
+         y = "F1 (hz)", x = "F2 (hz)") + 
+    theme_minimal(base_size = 16)
+```
+
+# Table vowel means
+```{r}
+head(vowel_means) %>%
+  kbl(caption = "Summary of Vowel Averages") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+
+
+
+
+
+### Plot trajectory length and vowel - Boxplot
+```{r}
+my_data %>%
+  ggplot(., aes(x = vowel, y = tl)) +
+   geom_boxplot() +
+  labs( y = "trajectory length", x = "vowel", title = "Trajectory and vowel Plot") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+### Plot trajectory length and language - Boxplot
+```{r}
+my_data %>%
+  ggplot(., aes(x = language, y = tl)) +
+   geom_boxplot() +
+  labs( y = "trajectory length", x = "vowel", title = "Trajectory and vowel Plot") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+```{r}
+my_mean <- my_data %>% 
+  group_by(vowel, language) %>% 
+  summarize(f1_cent = mean(f1_cent), f2_cent = mean(f2_cent), tl = mean(tl)) %>% 
+  ungroup() %>% 
+  mutate(order = case_when(vowel == "i" ~ 1, vowel == "a" ~ 2, TRUE ~ 3), 
+         vowel = forcats::fct_reorder2(vowel, vowel, order)) %>% 
+  arrange(order)
+```
+
+```{r}
+my_mean %>%
+  ggplot(aes(x = vowel, y = tl, color = language)) +
+  facet_grid(cols = vars(language)) +
+  stat_summary(fun = mean, 
+               geom = "pointrange", size = 1,
+               position = position_dodge(width = 0.5)) 
+  #scale_x_continuous(breaks = seq(0, 8, 1)) 
+
+```
+
+
+
+
+### Answers to Question 7
+7a.
+The sample script provided allows the analysis of vowels. Specifically, it calculates the acoustic properties. The code will calculate a vowel's onset, offset, and midpoint (durationV). The code "per20" allows us to analyze the percentage value. 
+The code works because the path allows it to fetch the data from the pa_3 folder to compute the script. The code is written in a way that it will capture percentages in increments of 15%.
+
+7b.
+The general outline of the script is to extract data from the recorded files. It extracts vowel formats (F1 and F2) by viewing textgrid and sound files. This is completed by including the pathway (savePath$) to where the files are located. The script is designed to quickly gather data and organize it (in a format for further analysis. The script also includes loops. This allows for completing a repetitive task instead of manually doing it. 
+The script will create a .csv file which can be used to further analyze.
+
+
+7c.
+The segmenting procedures we used for pa_2 and pa_3 were different. We had little data to analyze in pa_2, which made it feasible. In contrast, we had various words in English and Spanish to analyze in pa_3, this is why we used loops for this week's project. An advantage of using loops (pa_3) is that we can analyze various sounds very quickly. The Praat script was also important as it allowed us to gather centroids and trajectory lengths quickly.
